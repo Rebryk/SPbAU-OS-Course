@@ -7,7 +7,7 @@
 
 #define DESCRIPTORS_COUNT				256
 #define INTERRUPTION					14
-#define P_BIT							(1 << 7)
+#define P_BIT						(1 << 7)
 
 #define bits(x, l, r) ((x >> l) & ((1ll << (r - l + 1)) - 1))
 
