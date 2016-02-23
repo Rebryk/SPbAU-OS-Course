@@ -4,7 +4,7 @@ static const uint8_t ERROR_INTERRUPTS_COUNT 	= 7;
 static const uint8_t ERROR_INTERRUPTS[] 	= {8, 10, 11, 12, 13, 14, 17};
 
 void init_descriptor(uint8_t index, uint64_t offset, uint8_t flags) {
-	descriptors[index].reserved 				= 0;
+	descriptors[index].reserved 			= 0;
 	descriptors[index].segment_selector 		= KERNEL_CODE;
 	descriptors[index].interrupt_stack_table	= 0;
 	descriptors[index].flags 			= flags;
