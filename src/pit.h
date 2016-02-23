@@ -5,9 +5,9 @@
 #include "uart.h"
 
 #define CONTROL_PORT	0x43
-#define DATA_PORT		0x40
-#define RATE			4
-#define MOD				0x30
+#define DATA_PORT     0x40
+#define RATE			    4
+#define MOD				    0x30
 #define FREQUENCY_DIV	0xFFFF
 
 void init_pit();
