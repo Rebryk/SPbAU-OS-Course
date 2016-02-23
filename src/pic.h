@@ -9,7 +9,7 @@
 #define SLAVE_COMMAND_ANS_STATUS_REG	0xA0
 #define SLAVE_INTERMASK_AND_DATA_REG	0xA1
 
-#define EOI								0x20
+#define EOI                           0x20
 
 void init_pic();
 
