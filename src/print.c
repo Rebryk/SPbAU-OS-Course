@@ -1,6 +1,6 @@
 #include "print.h"
 
-static inline int strlen(const char* s) {
+int strlen(const char* s) {
 	const char* end = s;
 	while (*end) { 
 		++end;
@@ -8,7 +8,7 @@ static inline int strlen(const char* s) {
 	return end - s;
 }
 
-static inline int strcmp(const char* s1, const char* s2) {
+int strcmp(const char* s1, const char* s2) {
 	if (s1 == 0 || s2 == 0) {
 		return s1 == s2;
 	}
@@ -22,7 +22,7 @@ static inline int strcmp(const char* s1, const char* s2) {
 	return 0;
 }
 
-static inline int strncmp(const char* s1, const char* s2, int n) {
+int strncmp(const char* s1, const char* s2, int n) {
 	while (n--) {
 		if (s1 == 0 || s2 == 0) {
 			return s1 == s2;
@@ -34,7 +34,7 @@ static inline int strncmp(const char* s1, const char* s2, int n) {
 	return 0;
 }
 
-static inline const char* strchr(const char* str, const char c) {
+const char* strchr(const char* str, const char c) {
 	if (!str) {
 		return 0;
 	}
@@ -69,7 +69,7 @@ static inline const char* strchr(const char* str, const char c) {
 #define HH (1 << 3)
 #define LL (1 << 4)
 
-static inline int specifier_diuox(const char* x) {
+int specifier_diuox(const char* x) {
 	if (x) {
 		switch (*x) {
 			case 'd':
@@ -87,32 +87,32 @@ static inline int specifier_diuox(const char* x) {
 	return 0;
 }
 
-static inline int specifier_p(const char* x) {
+int specifier_p(const char* x) {
 	return (x && *x == 'p') ? P : 0;
 }
 
-static inline int specifier_cs(const char* x) {
+int specifier_cs(const char* x) {
 	if (!x) {
 		return 0;
 	}
 	return *x == 'c' ? C : (*x == 's' ? S : 0);
 }
 
-static inline int length_specifier_1(const char* x) {
+int length_specifier_1(const char* x) {
 	if (!x) {
 		return 0;
 	}
 	return *x == 'h' ? H : (*x == 'l' ? L : (*x == 'z' ? Z : 0));
 }
 
-static inline int length_specifier_2(const char* x) {
+int length_specifier_2(const char* x) {
 	if (!strncmp(x, "hh", 2)) {
 		return HH;
 	}
 	return !strncmp(x, "ll", 2) ? LL : 0;
 }
 
-static inline void next_specifier(const char* str, const char** start, const char** end, int* len_sp, int* sp) {
+void next_specifier(const char* str, const char** start, const char** end, int* len_sp, int* sp) {
 	*start = str;
 	while (*start) {
 		*start = strchr(*start, '%');
@@ -152,7 +152,7 @@ static inline void next_specifier(const char* str, const char** start, const cha
 	*len_sp = *sp = 0;
 }
 
-static inline void reverse(char* start, char* end) {
+void reverse(char* start, char* end) {
 	while (start < end) {
 		char tmp = *(--end);
 		*end = *start;
@@ -172,7 +172,7 @@ static inline void reverse(char* start, char* end) {
 #define get_base(sp) (sp & (D | I | U)) ? DEC : (sp == O ? OCT : HEX)
 #define dec(n) if (n-- == 0) { return -1; }
 
-static inline int snprint_unsigned(char* buff, size_t n, uintmax_t value, const size_t base, size_t fixed_len) {
+int snprint_unsigned(char* buff, size_t n, uintmax_t value, const size_t base, size_t fixed_len) {
 	char* end = buff;
 	do {
 		dec(n);
@@ -186,7 +186,7 @@ static inline int snprint_unsigned(char* buff, size_t n, uintmax_t value, const 
 	return end - buff;
 }
 
-static inline int snprint_signed(char* buff, size_t n, intmax_t value, const size_t base) {
+int snprint_signed(char* buff, size_t n, intmax_t value, const size_t base) {
 	if (n == 0) {
 		return -1;
 	}
@@ -197,7 +197,7 @@ static inline int snprint_signed(char* buff, size_t n, intmax_t value, const siz
 	return snprint_unsigned(buff, n, value, base, 0);
 }
 
-static inline int snprint_str(char* buff, size_t n, const char* s) {
+int snprint_str(char* buff, size_t n, const char* s) {
 	char* end = buff;
 	while (*s) {
 		dec(n);
@@ -206,7 +206,7 @@ static inline int snprint_str(char* buff, size_t n, const char* s) {
 	return end - buff;
 }
 
-static inline int snprintn_str(char* buff, size_t n, const char* s, int len) {
+int snprintn_str(char* buff, size_t n, const char* s, int len) {
 	if (len > (int)n) {
 		return -1;
 	}
@@ -217,13 +217,13 @@ static inline int snprintn_str(char* buff, size_t n, const char* s, int len) {
 	return end - buff;
 }
 
-static inline int snprint_char(char* buff, size_t n, const char c) {
+int snprint_char(char* buff, size_t n, const char c) {
 	dec(n);
 	buff[0] = c;
 	return 1;
 }
 
-static inline int print_ull(char* buff, size_t n, unsigned long long int value, const size_t base, size_t fixed_len) {
+int print_ull(char* buff, size_t n, unsigned long long int value, const size_t base, size_t fixed_len) {
 	if (buff) {
 		return snprint_unsigned(buff, n, value, base, fixed_len);
 	}
@@ -231,7 +231,7 @@ static inline int print_ull(char* buff, size_t n, unsigned long long int value, 
 	return printn_uart(buff2, snprint_unsigned(buff2, 20, value, base, fixed_len));
 }
 
-static inline int print_ll(char* buff, size_t n, long long int value, const size_t base) {
+int print_ll(char* buff, size_t n, long long int value, const size_t base) {
 	if (buff) {
 		return snprint_signed(buff, n, value, base);
 	}
@@ -239,28 +239,28 @@ static inline int print_ll(char* buff, size_t n, long long int value, const size
 	return printn_uart(buff2, snprint_signed(buff2, 21, value, base));
 }
 
-static inline int print_str(char* buff, size_t n, const char* s) {
+int print_str(char* buff, size_t n, const char* s) {
 	if (buff) {
 		return snprint_str(buff, n, s);
 	}
 	return print_uart(s);
 }
 
-static inline int printn_str(char* buff, size_t n, const char* s, int len) {
+int printn_str(char* buff, size_t n, const char* s, int len) {
 	if (buff) {
 		return snprintn_str(buff, n, s, len);
 	}
 	return printn_uart(s, len);
 }
 
-static inline int print_char(char* buff, size_t n, const char c) {
+int print_char(char* buff, size_t n, const char c) {
 	if (buff) {
 		return snprint_char(buff, n, c);
 	}
 	return printn_uart(&c, 1);
 }
 
-static inline int print_arg(char* buff, size_t n, int len_sp, int sp, va_list arguments) {
+int print_arg(char* buff, size_t n, int len_sp, int sp, va_list arguments) {
 	switch (len_sp) {
 		case 0:
 			if ((sp & (D | I))) {
@@ -310,7 +310,7 @@ static inline int print_arg(char* buff, size_t n, int len_sp, int sp, va_list ar
 
 #define update_counters(ret, buff, count, n) if (ret == -1) { return -1; } else { if (buff) { buff += ret; n -= ret; } count += ret; }
 
-static inline int print(char* buff, size_t n, const char* format, va_list arguments) {
+int print(char* buff, size_t n, const char* format, va_list arguments) {
 	const char *start, *end;
 	int len_sp, sp;
 	int ret;
