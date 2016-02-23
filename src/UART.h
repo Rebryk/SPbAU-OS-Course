@@ -1,5 +1,5 @@
-#ifndef UART_H
-#define UART_H
+#ifndef __UART_H__
+#define __UART_H__
 
 #define UART 	0x3f8
 #define IER   	0x3f9
