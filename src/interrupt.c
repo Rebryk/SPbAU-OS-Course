@@ -7,10 +7,10 @@ void init_descriptor(uint8_t index, uint64_t offset, uint8_t flags) {
 	descriptors[index].reserved 				= 0;
 	descriptors[index].segment_selector 		= KERNEL_CODE;
 	descriptors[index].interrupt_stack_table	= 0;
-	descriptors[index].flags 					= flags;
-	descriptors[index].offset_0_15 				= bits(offset, 0, 15); 
-	descriptors[index].offset_16_31	 			= bits(offset, 16, 31);
-	descriptors[index].offset_32_63				= bits(offset, 32, 63);
+	descriptors[index].flags 			= flags;
+	descriptors[index].offset_0_15 			= bits(offset, 0, 15); 
+	descriptors[index].offset_16_31	 		= bits(offset, 16, 31);
+	descriptors[index].offset_32_63			= bits(offset, 32, 63);
 }
 
 void init_idt() {
