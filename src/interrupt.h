@@ -2,53 +2,52 @@
 #define __INTERRUPT_H__
 
 #include <stdint.h>
-#include "memory.h"
-#include "uart.h"
 
-#define DESCRIPTORS_COUNT				256
-#define INTERRUPTION					14
-#define P_BIT						(1 << 7)
-
-#define bits(x, l, r) ((x >> l) & ((1ll << (r - l + 1)) - 1))
-
-struct IDT_PTR  {
+struct idt_ptr {
 	uint16_t size;
 	uint64_t base;
 } __attribute__((packed));
 
-struct IDT_DESCRIPTOR {
-	uint16_t 	offset_0_15;
-	uint16_t 	segment_selector; 
-	uint8_t	 	interrupt_stack_table;
-	uint8_t 	flags;
-	uint16_t	offset_16_31;
-	uint32_t	offset_32_63;
-	uint32_t 	reserved;
-} __attribute__((packed));
+struct irqchip {
+	void (*map)(unsigned);
+	void (*mask)(unsigned);
+	void (*unmask)(unsigned);
+	void (*eoi)(unsigned);
+};
 
-static struct IDT_DESCRIPTOR descriptors[DESCRIPTORS_COUNT];
-static struct IDT_PTR idt;
+static inline void set_idt(const struct idt_ptr *ptr)
+{ __asm__ volatile ("lidt (%0)" : : "a"(ptr)); }
 
-void init_idt();
+static inline void local_irq_disable(void)
+{ __asm__ volatile ("cli" : : : "cc"); }
 
-void init_descriptor(uint8_t, uint64_t, uint8_t);
+static inline void local_irq_enable(void)
+{ __asm__ volatile ("sti" : : : "cc"); }
 
-void empty();
+static inline void irqchip_map(struct irqchip *chip, unsigned offset)
+{ if (chip->map) chip->map(offset); }
 
-void pop_error();
+static inline void irqchip_mask(struct irqchip *chip, unsigned irq)
+{ if (chip->mask) chip->mask(irq); }
 
-static inline void set_idt(const struct IDT_PTR *ptr) { 
-	__asm__ volatile ("lidt (%0)" : : "a"(ptr));
-}
+static inline void irqchip_unmask(struct irqchip *chip, unsigned irq)
+{ if (chip->unmask) chip->unmask(irq); }
 
-// enable interruptions
-static inline void sti() { 
+static inline void irqchip_eoi(struct irqchip *chip, unsigned irq)
+{ if (chip->eoi) chip->eoi(irq); }
+
+static inline void sti() {
 	__asm__ volatile ("sti");
 }
 
-// disable interruptions
-static inline void cli() { 
+static inline void cli() {
 	__asm__ volatile ("cli");
 }
 
-#endif
+typedef void (*irq_t)(int irq);
+void register_irq_handler(int irq, irq_t isr);
+void unregister_irq_handler(int irq, irq_t isr);
+
+void setup_ints(void);
+
+#endif /*__INTERRUPT_H__*/
