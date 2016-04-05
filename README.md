@@ -16,7 +16,7 @@ SPbAU-OS-Course (Term 4)
 #Методы
 * threads_init - инициализирует потоки. Кладет их в free_threads. Первый поток отвечает за main (выполняется всегда).
 * thread_create - достает поток из free_threads и возвращает его.
-* thread_start - кладет поток в busy_threads.
+* thread_start - выделяет память под стэк и кладет поток в busy_threads.
 * thread_terminate - кладет поток в terminated_threads.
 * thread_join - ждет, пока другой поток не будет TERMINATED.
 * thread_destroy - освобождает ресурсы и кладет поток в free_threads.
