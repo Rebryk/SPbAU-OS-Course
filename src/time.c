@@ -5,6 +5,7 @@
 #include "stdio.h"
 #include "time.h"
 #include "thread.h"
+#include "utils.h"
 
 /*
  * Timer/Counter Control Register Format:
@@ -20,6 +21,7 @@
  * M2, M1 and M0 - Counter Mode Select
  * BCD - BCD vs Binary number encoding
  */
+
 #define I8254_CTRL_PORT     0x43
 #define I8254_CH0_DATA_PORT 0x40
 #define I8254_FREQUENCY     1193180ul
@@ -58,8 +60,8 @@ static void i8254_interrupt_handler(int irq)
 {
 	(void) irq;
 	++jiffies;
-
-	pic_eoi(8);
+	
+	unmask_irq(irq);
 	thread_yield();
 }
 

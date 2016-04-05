@@ -99,23 +99,135 @@ static void slab_smoke_test(void)
 #undef ALLOCS
 }*/
 
-void* foo(void* str) {
-	printf("%s\n", (char*)str);
+struct join_pair_t {
+	struct thread_t* thread;
+	void* arg;
+};
 
-	while (1) {
-	//for (int i = 0; i < (int)1e8; ++i) {
+struct pair_t {
+	void* first;
+	void* second;
+};
+
+static void pow2(void* value) {
+	*(int*) value *= *(int*) value;
+}
+
+static void* thread_run_1(void* value) {
+	pow2(value);
+	return value;
+}
+
+static void* thread_run_2(void* value) {
+	struct join_pair_t* data = (struct join_pair_t*) value;
+	void* res = 0;
+	thread_join(data->thread, &res);
+	pow2(data->arg);
+	*(int*) data->arg += *(int*) res;
+	return value;
+}
+
+static void thread_test() {
+	int arg1 = 2;
+	int arg2 = 3;
+
+	struct thread_t* thread_1 = thread_create(thread_run_1, &arg1);
+
+	struct join_pair_t pair;
+	pair.thread = thread_1;
+	pair.arg = (void*) &arg2;
+
+	struct thread_t* thread_2 = thread_create(thread_run_2, &pair);
+
+	thread_start(thread_2);
+	thread_start(thread_1);
+
+	void* res = 0;
+	thread_join(thread_2, &res);
+
+	thread_destroy(thread_1);
+	thread_destroy(thread_2);
+
+	if (*(int*) ((struct join_pair_t*) res)->arg == 13) {
+		printf("thread_test: passed! \n");
+	} else {
+		printf("thread_test: failed! \n");
+	}
+}
+
+static spinlock_t test_lock;
+
+static int wait(int id, int* arg) {
+	int ok = 1;
+	for (int i = 0; i < (int)1e6 && ok; ++i) {
+		if (id != *arg) {
+			ok = 0;
+		}
 		barrier();
 	}
+	return ok;
+}
 
-	return str;
+static void* func1(void* arg) {
+	struct pair_t* pair = (struct pair_t*) arg;
+
+	lock(&test_lock);
+	*(int*) pair->first = 1;
+	*(int*) pair->second = wait(1, (int*) pair->first);
+	unlock(&test_lock);	
+
+	return pair->second;
+}
+
+static void* func2(void* arg) {
+	struct pair_t* pair = (struct pair_t*) arg;
+
+	lock(&test_lock);
+	*(int*) pair->first = 2;
+	*(int*) pair->second = wait(2, (int*) pair->first);
+	unlock(&test_lock);
+
+	return pair->second;
+}
+
+static void lock_test() {
+	int thread_id;
+	int ret1;
+	int ret2;
+	struct pair_t arg1;
+	struct pair_t arg2;
+
+	arg1.first = (void*) &thread_id;
+	arg1.second = (void*) &ret1;
+	struct thread_t* thread_1 = thread_create(func1, &arg1);
+
+	arg2.first = (void*) &thread_id;
+	arg2.second = (void*) &ret2;
+	struct thread_t* thread_2 = thread_create(func2, &arg2);
+
+	thread_start(thread_1);
+	thread_start(thread_2);
+
+	void* res1;
+	thread_join(thread_1, &res1);
+
+	void* res2;
+	thread_join(thread_2, &res2);
+
+	thread_destroy(thread_1);
+	thread_destroy(thread_2);
+
+	if (*(int*) res1 == 1 && *(int*) res2 == 1) {
+		printf("lock_test: passed! \n");
+	} else {
+		printf("lock_test: failed! \n");
+	}
 }
 
 // cd /media/sf_shared/os-course/sol/ && make clean && make && qemu-system-x86_64 -kernel kernel -nographic
 
 void main(void)
 {
-	printf("Main: begin\n");
-
 	setup_serial();
 	setup_misc();
 	setup_ints();
@@ -124,39 +236,12 @@ void main(void)
 	setup_paging();
 	setup_alloc();
 	setup_time();
-	
-	start_critical_section();	
+
 	threads_init();
+	thread_test();
+	lock_test();	
 
-	struct thread_t* main_thread = thread_create(NULL, NULL);
-	main_thread->status = RUNNING;
-	set_main_thread(main_thread);
-	
-	char str1[] = "thread1";
-	struct thread_t* thread1 = thread_create(foo, str1);
-	thread_start(thread1);
-
-	/*
-	char str2[] = "thread2";
-	struct thread_t* thread2 = thread_create(foo, str2);
-	thread_start(thread2);
-	
-	char str3[] = "thread3";
-	struct thread_t* thread3 = thread_create(foo, str3);
-	thread_start(thread3);*/
-
-	end_critical_section();
-	
-	/*char str[] = "foo!";
-	struct thread_t* thread = thread_create(foo, str);
-	thread_start(thread);*/
-
-	//local_irq_enable();
-
-	//buddy_smoke_test();
-	//slab_smoke_test();
-
-	printf("main finised!");
+	printf("main: end\n");
 	while (1) {
 		barrier();
 	}

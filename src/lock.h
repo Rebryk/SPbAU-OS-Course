@@ -10,9 +10,11 @@ struct spinlock {
 	uint16_t ticket;
 };
 
-void lock(struct spinlock* lock);
+typedef struct spinlock spinlock_t;
 
-void unlock(struct spinlock* lock);
+void lock(spinlock_t* lock);
+
+void unlock(spinlock_t* lock);
 
 void start_critical_section();
 

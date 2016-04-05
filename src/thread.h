@@ -9,7 +9,7 @@
 
 #include "stdio.h"
 
-#define THREADS_COUNT (1 << 3)
+#define THREADS_COUNT (1 << 16)
 #define THREAD_STACK_SIZE (1 << 13)
 
 typedef enum {
@@ -23,9 +23,8 @@ struct thread_t {
 	void* (*func)(void*);
 	void* result;
 	void* arg;
-	
-	int id;
-	
+	void* stack_start;
+
 	thread_status status;
 	struct list_head node;
 };

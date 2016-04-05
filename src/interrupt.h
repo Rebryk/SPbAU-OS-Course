@@ -50,4 +50,6 @@ void unregister_irq_handler(int irq, irq_t isr);
 
 void setup_ints(void);
 
+void unmask_irq(int irq);
+
 #endif /*__INTERRUPT_H__*/
