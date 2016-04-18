@@ -5,9 +5,14 @@
 #include "serial.h"
 #include "paging.h"
 #include "stdio.h"
+#include "string.h"
 #include "misc.h"
 #include "time.h"
+#include "fs.h"
+#include "balloc.h"
+#include "initramfs.h"
 
+/*
 static bool range_intersect(phys_t l0, phys_t r0, phys_t l1, phys_t r1)
 {
 	if (r0 <= l1)
@@ -113,18 +118,66 @@ static void test_threading(void)
 		wait(pid);
 	}
 	DBG_INFO("Threading test finished");
+}*/
+
+
+static void test_dir() {
+	bool ok = true;
+
+	ok &= (mkdir("dir1") == true);
+	ok &= (mkdir("dir2") == true);
+	ok &= (mkdir("dir1/dir3") == true);
+	ok &= (mkdir("dir1/dir4") == true);
+	ok &= (mkdir("dir1/dir3") == false);
+	
+	printf("test_dir: %s.\n", ok ? "OK" : "FAIL");
 }
+
+static void test_files() {
+	bool ok = true;
+
+	struct file_desc_t* file = open("dir1/test.txt", WRITE);
+	const char* text = "Hello, World!";
+	write(file, text, strlen(text));
+	close(file);
+	
+	file = open("dir1/test.txt", READ);
+	char buff[100];
+	int count = read(file, buff, 100);
+	ok &= !strcmp(buff, text);
+	ok &= (count == 13);
+	close(file);
+
+	file = open("dir1/dir3/dir5/test.txt", READ);
+	ok &= (file == 0);
+	close(file);
+
+	readdir("");
+	readdir("dir1");
+	readdir("dir2");
+
+	printf("test_files: %s.\n", ok ? "OK" : "FAIL");
+}
+
+static void test_fs() {
+	test_dir();
+	test_files();
+}
+
 
 static int start_kernel(void *dummy)
 {
 	(void) dummy;
 
-	buddy_smoke_test();
-	slab_smoke_test();
-	test_threading();
+	//buddy_smoke_test();
+	//slab_smoke_test();
+	//test_threading();
+	test_fs();
 
 	return 0;
 }
+
+// make clean && make && qemu-system-x86_64 -kernel kernel -nographic -initrd files
 
 void main(void)
 {
@@ -132,11 +185,16 @@ void main(void)
 	setup_misc();
 	setup_ints();
 	setup_memory();
+	setup_initramfs();
+
 	setup_buddy();
 	setup_paging();
 	setup_alloc();
 	setup_time();
 	setup_threading();
+	fs_init();
+	read_initramfs();
+
 	local_irq_enable();
 
 	create_kthread(&start_kernel, 0);

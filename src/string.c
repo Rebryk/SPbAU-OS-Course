@@ -90,3 +90,12 @@ char *strcpy(char *dst, const char *src)
 	*dst = 0;
 	return ret;
 }
+
+char *read_until(char *dst, const char *src, const char ch)
+{
+	char *ret = dst;
+
+	while (*src && *src != ch)
+		*dst++ = *src++;
+	return ret;
+}

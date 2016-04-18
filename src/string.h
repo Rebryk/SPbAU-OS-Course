@@ -13,4 +13,6 @@ int strcmp(const char *l, const char *r);
 char *strncpy(char *dst, const char *src, size_t size);
 char *strcpy(char *dst, const char *src);
 
+char *read_until(char *dst, const char *src, const char ch);
+
 #endif /*__STRING_H__*/
