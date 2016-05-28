@@ -1,11 +1,11 @@
 #include <stdint.h>
 
+#include "locking.h"
 #include "kernel.h"
 #include "memory.h"
 #include "balloc.h"
 #include "stdio.h"
 #include "misc.h"
-#include "thread.h"
 
 #define MAX_MEMORY_NODES (1 << PAGE_NODE_BITS)
 
@@ -14,7 +14,6 @@ static int memory_nodes;
 static LIST_HEAD(node_order);
 static struct list_head *node_type[NT_COUNT];
 
-static spinlock_t memory_lock;
 
 struct memory_node *memory_node_get(int id)
 { return &nodes[id]; }
@@ -54,6 +53,7 @@ static void __memory_node_add(enum node_type type, unsigned long begin,
 	const pfn_t pfn = begin >> PAGE_BITS;
 
 	list_init(&node->link);
+	spinlock_init(&node->lock);
 	node->begin_pfn = pfn;
 	node->end_pfn = pfn + pages;
 	node->id = memory_nodes++;
@@ -163,6 +163,7 @@ void setup_memory(void)
 	const phys_t kernel_end = (phys_t)bss_phys_end;
 
 	balloc_add_region(kernel_begin, kernel_end - kernel_begin);
+	balloc_add_region(initrd_begin, initrd_end - initrd_begin);
 
 	for (int i = 0; i != memory_map_size; ++i) {
 		const struct mmap_entry *entry = memory_map + i;
@@ -175,6 +176,11 @@ void setup_memory(void)
 			(unsigned long long) kernel_begin,
 			(unsigned long long) kernel_end - 1);
 	balloc_reserve_region(kernel_begin, kernel_end - kernel_begin);
+
+	printf("reserve memory range: %#llx-%#llx for initrd\n",
+			(unsigned long long) initrd_begin,
+			(unsigned long long) initrd_end - 1);
+	balloc_reserve_region(initrd_begin, initrd_end - initrd_begin);
 }
 
 void setup_buddy(void)
@@ -266,7 +272,10 @@ static struct page *__alloc_pages_node(int order, struct memory_node *node)
 
 struct page *alloc_pages_node(int order, struct memory_node *node)
 {
+	const bool enabled = spin_lock_irqsave(&node->lock);
 	struct page * pages = __alloc_pages_node(order, node);
+
+	spin_unlock_irqrestore(&node->lock, enabled);
 
 	return pages;
 }
@@ -334,7 +343,10 @@ void free_pages_node(struct page *pages, int order, struct memory_node *node)
 	if (!pages)
 		return;
 
+	const bool enabled = spin_lock_irqsave(&node->lock);
+
 	__free_pages_node(pages, order, node);
+	spin_unlock_irqrestore(&node->lock, enabled);
 }
 
 struct page *__alloc_pages(int order, int type)
@@ -356,10 +368,7 @@ struct page *__alloc_pages(int order, int type)
 
 struct page *alloc_pages(int order)
 {
-    lock(&memory_lock);
-	struct page* result = __alloc_pages(order, NT_HIGH);
-    unlock(&memory_lock);
-    return result;
+	return __alloc_pages(order, NT_HIGH);
 }
 
 void free_pages(struct page *pages, int order)
@@ -367,9 +376,7 @@ void free_pages(struct page *pages, int order)
 	if (!pages)
 		return;
 
-    lock(&memory_lock);
 	struct memory_node *node = page_node(pages);
 
 	free_pages_node(pages, order, node);
-    unlock(&memory_lock);
 }

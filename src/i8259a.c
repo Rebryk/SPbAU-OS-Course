@@ -1,6 +1,6 @@
 #include "interrupt.h"
+#include "irqchip.h"
 #include "ioport.h"
-#include "i8259a.h"
 
 #define PIC_MASTER_CMD_PORT  0x20
 #define PIC_MASTER_DATA_PORT 0x21
@@ -52,7 +52,7 @@ static void pic_unmask(unsigned irq)
 		out8(PIC_SLAVE_DATA_PORT, (pic_irq_mask >> 8) & 0xFFU);
 }
 
-void pic_eoi(unsigned irq)
+static void pic_eoi(unsigned irq)
 {
 	if (irq >= 8) {
 		out8(PIC_SLAVE_CMD_PORT, PIC_EOI_CMD + (irq & 7));
@@ -62,7 +62,7 @@ void pic_eoi(unsigned irq)
 	}
 }
 
-struct irqchip i8259a = {
+const struct irqchip i8259a = {
 	.map = &pic_remap,
 	.mask = &pic_mask,
 	.unmask = &pic_unmask,
