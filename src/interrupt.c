@@ -6,6 +6,7 @@
 #include "memory.h"
 #include "string.h"
 #include "stdio.h"
+#include "console.h"
 #include "error.h"
 
 #include <stdint.h>
@@ -16,7 +17,8 @@
 #define IDT_USER       ((uint64_t)3 << 45)
 #define IDT_IRQS       16
 #define IDT_EXCEPTIONS 32
-#define IDT_SIZE       (IDT_IRQS + IDT_EXCEPTIONS)
+#define IDT_CALL       1
+#define IDT_SIZE       (IDT_IRQS + IDT_EXCEPTIONS + IDT_CALL)
 
 
 struct idt_entry {
@@ -198,6 +200,8 @@ void unregister_irq_handler(int irq, irq_t isr)
 	}
 }
 
+void __sys_call_handler(void);
+
 void setup_ints(void)
 {
 	for (int i = 0; i != IDT_IRQS; ++i)
@@ -206,10 +210,17 @@ void setup_ints(void)
 	for (int i = 0; i != IDT_EXCEPTIONS; ++i)
 		setup_irq(isr_entry[i], i);
 
+    setup_idt_entry(IDT_SIZE - 1, KERNEL_CODE, (unsigned long)__sys_call_handler, IDT_64TRAP | IDT_USER); // TRAP and DPL=3
+
 	idt_ptr.size = sizeof(idt) - 1;
 	idt_ptr.base = (uintptr_t)idt;
 	set_idt(&idt_ptr);
 
 	irqchip = &i8259a;
 	irqchip_map(irqchip, IDT_EXCEPTIONS);
+}
+
+void sys_call_handler(struct thread_regs* regs) {
+	console_write((char*) regs->rbx, regs->rcx);
+	return;
 }

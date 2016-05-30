@@ -53,6 +53,8 @@ struct tss {
 	unsigned long iomap[IO_MAP_WORDS + 1];
 } __attribute__((packed));
 
+static struct tss tss;
+
 static struct thread *current_thread;
 static struct thread bootstrap;
 static DEFINE_SPINLOCK(threads_lock);
@@ -118,6 +120,8 @@ static void place_thread(struct thread *thread)
 		check_stack(prev);
 
 	current_thread = thread;
+
+    tss.rsp[0] = (uint64_t)thread_stack_end(thread);
 
 	store_pml4(page_paddr(current_thread->mm->pt));
 
@@ -438,6 +442,24 @@ bool need_resched(void)
 	return scheduler->need_preempt(current_thread);
 }
 
+
+struct gdt_ptr {
+    uint16_t size;
+    uint64_t addr;
+} __attribute__((packed));
+
+static inline void *get_gdt_ptr(void)
+{
+    struct gdt_ptr ptr;
+
+    __asm__("sgdt %0" : "=m"(ptr));
+    return (void *)ptr.addr;
+}
+
+static inline void load_tr(unsigned short sel)
+{ __asm__("ltr %0" : : "a"(sel)); }
+
+
 void setup_threading(void)
 {
 	extern struct scheduler round_robin;
@@ -454,4 +476,17 @@ void setup_threading(void)
 	bootstrap.mm = &mm;
 	mm.pt = pfn2page(load_pml4() >> PAGE_BITS);
 	current_thread = &bootstrap;
+
+    uint32_t* gdt_ptr = (uint32_t*)get_gdt_ptr();
+    uint64_t base = (uint64_t)&tss;
+    uint32_t limit = sizeof(tss) - 1;
+    uint32_t word0 = ((BITS(15, 0) & base) << 16) | (BITS(15, 0) & limit);
+    uint32_t word1 = (BITS(31, 24) & base) | (BITS(19, 16) & limit) | (1 << 15) | (3 << 13) | (9 << 8) | ((BITS(23, 16) & base) >> 16);
+    uint32_t word2 = (base) >> 32;
+    uint32_t word3 = 0;
+    gdt_ptr[7 * 8 / 4 + 0] = word0;
+    gdt_ptr[7 * 8 / 4 + 1] = word1;
+    gdt_ptr[7 * 8 / 4 + 2] = word2;
+    gdt_ptr[7 * 8 / 4 + 3] = word3;
+    load_tr(7 * 8);
 }
