@@ -9,4 +9,4 @@ SPbAU-OS-Course (Term 4)
 
 #Syscalls
 * sys_call_handler - вызывает console_write (просто выводим строку).
-* добавляем новую запись в IDT
+* добавляем новую запись в IDT.
