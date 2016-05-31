@@ -13,10 +13,7 @@
 
 static void read(struct fs_file* file, void* buffer, const int offset, const int size) {
     vfs_seek(file, offset, FSS_SET);
-    int read = 0;
-    while (read < size) {
-        read += vfs_read(file, buffer, size - read);
-    }
+    vfs_read(file, buffer, size);
 }
 
 static void read_header(struct elf_phdr phdr, struct fs_file file, phys_t pml4_paddr, pte_t* pml4) {
