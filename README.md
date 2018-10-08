@@ -1,19 +1,19 @@
-# SPbAU-OS-Course
+# SPbAU OS Course
 SPbAU-OS-Course (Term 4)
 
-#Файлы
+# Файлы
 * lock.h / lock.c - реализация spinlock-а.
 * thread.h / thread.c - реализация thread-ов. 
 * thread_s.S - переключения контекста (идея Маркелова Саши с wrapper-ом. Она прикольная).
 
-#Идея
+# Идея
 Всего у меня 2^16 потоков. 
 Все потоки хранятся в трех списках:
 * free_threads - свободные потоки.
 * busy_threads - потоки, которые выполняются.
 * terminated_threads - потоки, которые уже завершились.
 
-#Методы
+# Методы
 * threads_init - инициализирует потоки. Кладет их в free_threads. Первый поток отвечает за main (выполняется всегда).
 * thread_create - достает поток из free_threads и возвращает его.
 * thread_start - выделяет память под стэк и кладет поток в busy_threads.
