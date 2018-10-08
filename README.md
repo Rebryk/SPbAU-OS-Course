@@ -1,5 +1,5 @@
 # SPbAU OS Course
-SPbAU-OS-Course (Term 4)
+SPbAU OS course, Spring '16
 
 # Файлы
 * lock.h / lock.c - реализация spinlock-а.
